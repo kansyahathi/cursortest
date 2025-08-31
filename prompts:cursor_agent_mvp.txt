@@ -1,0 +1,31 @@
+You are Cursor Agent working in this repository.
+
+Goal: Build a static interactive presentation site per `docs/FT_presentation_XRM.md`.
+Keep it zero-build (no bundlers); use CDN libraries only if necessary.
+
+### Requirements
+1) Create `/site` with:
+   - `index.html` (header with nav: Intro, Modules, Canvas, Roadmap; theme toggle)
+   - `styles.css` (responsive + print stylesheet)
+   - `router.js` (hash routes: #/intro, #/modules, #/canvas, #/roadmap)
+   - `markdown.js` (load & render `/content/*.md`; tiny CDN MD parser is OK)
+2) Load content from `/content/01_Intro.md`, `02_Modules.md`, `03_BusinessCanvas.md`, `04_Roadmap.md`.
+3) Add light/dark theme toggle (persist in localStorage).
+4) Add simple section reveal animations (CSS-only if possible).
+5) Ensure **print to PDF** is clean (hide nav, proper page breaks).
+6) Add minimal accessibility (semantics, focus states, aria labels).
+7) Provide `/site/README.md` with local preview instruction (`python3 -m http.server 8080 -d site`).
+8) Add GitHub Actions workflow to deploy `/site` to GitHub Pages: `.github/workflows/pages.yml`.
+9) Run an HTML/CSS linter and fix issues.
+10) Commit in logical steps with clear messages. Open a PR titled: "feat(site): interactive XRM presentation".
+
+### Constraints
+- No API keys; no runtime secrets.
+- Prefer pure HTML/CSS/JS; if using CDN (e.g., marked), pin versions.
+
+### Acceptance Criteria
+- Opening `site/index.html` shows Intro + working routes.
+- Content reflects `/content/*.md`.
+- Dark/light toggle works and persists.
+- Print to PDF yields a 3–6 page doc with proper pagination.
+- Actions workflow publishes to GitHub Pages after merge.
