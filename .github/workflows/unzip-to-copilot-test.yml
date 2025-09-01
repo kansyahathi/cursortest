@@ -1,0 +1,95 @@
+name: Unzip archive into copilot_test
+
+on:
+  workflow_dispatch:
+    inputs:
+      zip_path:
+        description: 'Path to the ZIP in repo root'
+        required: true
+        default: 'xrm-presentation-spec.zip'
+      target_dir:
+        description: 'Target directory to extract into'
+        required: true
+        default: 'copilot_test'
+      clean_target:
+        description: 'Clean target_dir before extraction (true/false)'
+        required: true
+        default: 'true'
+      delete_zip:
+        description: 'Delete ZIP after successful extraction (true/false)'
+        required: true
+        default: 'false'
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # allow committing changes
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure unzip is available
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip
+
+      - name: Validate inputs and prepare
+        shell: bash
+        run: |
+          set -euo pipefail
+          ZIP_PATH="${{ github.event.inputs.zip_path }}"
+          TARGET_DIR="${{ github.event.inputs.target_dir }}"
+          CLEAN_TARGET="${{ github.event.inputs.clean_target }}"
+          DELETE_ZIP="${{ github.event.inputs.delete_zip }}"
+
+          if [ ! -f "$ZIP_PATH" ]; then
+            echo "ZIP not found: $ZIP_PATH"
+            exit 1
+          fi
+
+          if [ "$CLEAN_TARGET" = "true" ]; then
+            rm -rf "$TARGET_DIR"
+          fi
+          mkdir -p "$TARGET_DIR"
+
+          echo "ZIP_PATH=$ZIP_PATH" >> $GITHUB_ENV
+          echo "TARGET_DIR=$TARGET_DIR" >> $GITHUB_ENV
+          echo "DELETE_ZIP=$DELETE_ZIP" >> $GITHUB_ENV
+
+      - name: Unzip archive into target dir (overwrite)
+        run: |
+          unzip -o "$ZIP_PATH" -d "$TARGET_DIR"
+
+      - name: Flatten single top-level folder (if present)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$TARGET_DIR"
+          COUNT=$(ls -1A | wc -l)
+          if [ "$COUNT" -eq 1 ]; then
+            ONLY=$(ls -1A)
+            if [ -d "$ONLY" ]; then
+              shopt -s dotglob
+              mv "$ONLY"/* .
+              rmdir "$ONLY"
+            fi
+          fi
+          cd -
+
+      - name: Optionally delete ZIP after extraction
+        if: ${{ github.event.inputs.delete_zip == 'true' }}
+        run: |
+          git rm -f "${{ github.event.inputs.zip_path }}" || true
+
+      - name: Commit extracted files
+        shell: bash
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(actions): unzip ${{ github.event.inputs.zip_path }} into ${{ github.event.inputs.target_dir }}" || echo "No changes to commit"
+          git push
